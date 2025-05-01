@@ -82,14 +82,14 @@ public class App {
 
             legend.addGroup("StructureDefinition")
                     .setHeader("Type", "Value")
-                    .addRow("url", "https://fhir.ee/base/StructureDefinition/ee-patient")
-                    .addRow("version", "1.1.1")
-                    .addRow("name", "EEBasePatient")
-                    .addRow("status", "Draft")
-                    .addRow("kind", "Resource")
-                    .addRow("type", "Patient")
-                    .addRow("abstract", "false")
-                    .addRow("baseDefinition", "http://hl7.org/fhir/StructureDefinition/Patient");
+                    .addRow("url", structureDefinition.getUrl())
+                    .addRow("version", structureDefinition.getVersion())
+                    .addRow("name", structureDefinition.getName())
+                    .addRow("status", structureDefinition.getStatus().getDisplay())
+                    .addRow("kind", structureDefinition.getKind().getDisplay())
+                    .addRow("type", structureDefinition.getType())
+                    .addRow("abstract", String.valueOf(structureDefinition.getAbstract()))
+                    .addRow("baseDefinition", structureDefinition.getBaseDefinition());
 
             if (config.isShowConstraints()) {
                 Legend.LegendGroup constraintGroup = legend.addGroup("Constraints");

@@ -494,7 +494,6 @@ public class Element {
 
     public List<String> copyValuesFrom(Element source, boolean logDifferences) {
         List<String> changes = new ArrayList<>();
-
         if (source == null) {
             return changes; // Empty list, no changes.
         }
@@ -567,7 +566,7 @@ public class Element {
         if (!Objects.equals(this.fixedValue, source.fixedValue)) {
             changes.add("fixedValue: " + this.fixedValue + " -> " + source.fixedValue);
             this.fixedValue = source.fixedValue;
-        } else {
+        } else if (!this.fixedValue.isEmpty() && !source.fixedValue.isEmpty()) {
             differentialModifiers.add(ElementModifiers.FIXED_VALUE);
         }
 
@@ -636,7 +635,7 @@ public class Element {
             return "strikethrough('" + value + "')";
         }
 
-        if (modifier == ElementModifiers.NAME && differentialModifiers.size() > 1) {
+        if (modifier == ElementModifiers.NAME && !differentialModifiers.isEmpty()) {
             return "black('" + value + "')";
         }
 

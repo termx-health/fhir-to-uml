@@ -14,7 +14,7 @@ public final class Config {
     // Example of the newly added fields:
     private String view = "snapshot";       // can be "snapshot" or "differential"
     private boolean hideRemovedObjects = true; // default is true
-    private boolean showConstraints = true;
+    private boolean showConstraints = false;
     private boolean showBindings = true;
     private boolean reduceSliceClasses = false;
     private boolean hideLegend = false;

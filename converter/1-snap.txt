@@ -1,0 +1,105 @@
+@startuml
+hide empty members
+skinparam wrapwidth 500
+left to right direction
+skinparam classStereotypeFontColor black
+skinparam classAttributeFontColor #808080
+skinparam legendFontSize 10
+skinparam legendFontColor #333333
+skinparam legendBackgroundColor #F2F2F2
+skinparam legendBorderColor #999999
+!function bold($value)
+!return "<b>" + $value + "</b>"
+!endfunction
+!function black($value)
+!return "<color:Black>" + $value + "</color>"
+!endfunction
+!function strikethrough($value)
+!return "<s>" + $value + "</s>"
+!endfunction
+!function wrap2($text, $width=40)
+!if %strlen($text) <= $width
+!return $text
+!else
+!$out = ""
+!$pos = $width - 1
+!$cut = ""
+!while %strlen($text) > $width
+!while $pos >= 0 && $cut == ""
+!if %substr($text, $pos, 1) == " "
+!$cut = $pos
+!else
+!$pos = $pos - 1
+!endif
+!endwhile
+!if $pos < 0
+!$out = $out + %substr($text, 0, $width - 1) + "<U+2936><U+2AFD>"
+!$text = %substr($text, $width - 1, %strlen($text) - $width + 1)
+!else
+!$out = $out + %substr($text, 0, $cut)
+!$text = %substr($text, $cut + 1, %strlen($text) - $cut)
+!endif
+!if %strlen($text) > 0
+!$out = $out + "\n"
+!endif
+!$pos = $width - 1
+!$cut = ""
+!endwhile
+!if %strlen($text) > 0
+!$out = $out + $text
+!endif
+!endif
+!return $out
+!endfunction
+
+class "black('Observation (ee-observation)')" {
+	{field} # black('status') : code = black(bold('final')) [1..1] 
+	{field} + black('category') : CodeableConcept  [black(bold('1'))..*] 
+	{field} + code : CodeableConcept  [1..1] 
+	{field} ~ black('subject') : black(bold('Reference(ee-patient)'))  [black(bold('1'))..1] 
+	{field} + black('effective[x]') : black(bold('Period'))  [0..1] 
+	{field} + black('issued') : instant  [black(bold('1'))..1] 
+	{field} ~ black('performer') : black(bold('Reference(ee-related-person)'))  [0..*] 
+	{field} + black('value[x]') : black(bold('CodeableConcept'))  [black(bold('1'))..1] 
+	black(bold('{field}<size:10>Binding: marital-status (Required)</size>'))
+}
+class "black('Category')" {
+	{field} + black('coding') : Coding  [black(bold('1'))..*] 
+}
+class "black('Slices for category (Coding)')"<< (S,#FF7700) Slices >> {
+	--Slices--
+	{field} + black('obscat') : Coding  [black(bold('1'))..*] 
+}
+class "black('Obscat')" {
+	{field} # black('system') : black(bold('uri')) = black(bold('http://terminology.hl7.org/CodeSystem/observation-category')) [0..black(bold('1'))] 
+	{field} # black('code') : black(bold('code')) = black(bold('social-history')) [0..black(bold('1'))] 
+	{field} # black('display') : black(bold('string')) = black(bold('Social history')) [0..black(bold('1'))] 
+}
+class "black('Code')" {
+	{field} + black('coding') : black(bold('Coding'))  [black(bold('1'))..black(bold('1'))] 
+}
+class "black('Coding')" {
+	{field} # black('system') : black(bold('uri')) = black(bold('http://snomed.info/sct')) [black(bold('1'))..black(bold('1'))] 
+	{field} # black('code') : black(bold('code')) = black(bold('125680007')) [black(bold('1'))..black(bold('1'))] 
+	{field} # black('display') : black(bold('string')) = black(bold('Marital status')) [black(bold('1'))..black(bold('1'))] 
+}
+"black('Observation (ee-observation)')" *-- "1..*" "black('Category')" : **category**
+"black('Category')" o-- "1..*" "black('Slices for category (Coding)')" : **coding**
+"black('Slices for category (Coding)')" o-- "1..*" "black('Obscat')" : **obscat**
+"black('Observation (ee-observation)')" *-- "1..1" "black('Code')" : **code**
+"black('Code')" o-- "1..1" "black('Coding')" : **coding**
+legend top right
+= StructureDefinition
+
+|= Type |= Value |
+| url | https://fhir.ee/mpi/StructureDefinition/ee-mpi-socialhistory-marital-status |
+| version | 1.1.1 |
+| name | EEMPISocialHistoryMaritalStatus |
+| status | Active |
+| kind | Resource |
+| type | Observation |
+| abstract | false |
+| baseDefinition | https://fhir.ee/base/StructureDefinition/ee-observation |
+
+end legend
+@enduml
