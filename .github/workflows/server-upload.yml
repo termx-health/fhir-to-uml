@@ -18,5 +18,5 @@ jobs:
           script: |
             cd /home/spectre/fhir-uml-converter
             git pull origin main
-            docker build -t fhir-uml-server .
+            docker build -f Dockerfile.dev -t fhir-uml-server .
             docker compose up -d --force-recreate
