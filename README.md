@@ -23,6 +23,10 @@ By enabling direct transformations between standard FHIR definitions and UML dia
 - Enhances interoperability and accelerates the development of healthcare IT systems.
 - Expands TermX platform functionality, promoting open-source healthcare solution advancement.
 
+## Demo
+
+You can try FHIR to UML convsion in the our sandbox [fhir-uml-converter.online](https://fhir-uml-converter.online).
+
 ## Requirements
 
 - **Java 21 or above** (tested with OpenJDK)
