@@ -1,304 +1,180 @@
-# FHIR StructureDefinition ↔ UML Transformation Tool
+# FHIR StructureDefinition → UML
 
-## Overview
+Convert FHIR `StructureDefinition` resources into UML class diagrams (PlantUML), as text or
+rendered PNG/SVG. Part of the [TermX](https://termx.org) ecosystem, it adds UML modelling to the
+platform and helps bridge FHIR data models with traditional software-modelling tools.
 
-This project focuses on developing tools and scripts that enable bidirectional, automated transformation between FHIR StructureDefinition resources and UML class diagrams. By bridging the gap between FHIR data models and traditional software modeling tools, the project aims to streamline healthcare systems development and foster interoperability. The resulting solution will also be integrated into the TermX platform, thereby enhancing its modeling capabilities.
+> Try it in the sandbox: **[fhir-uml-converter.online](https://fhir-uml-converter.online)**
 
-### Key Objectives
+## How it works
 
-1. **Bidirectional Conversion:**  
-   - Automatically generate UML class diagrams (e.g., PlantUML) from FHIR StructureDefinitions.
-   - Convert UML class diagrams back into valid FHIR StructureDefinitions.
-   
-2. **Integration with PlantUML:**  
-   - Utilize PlantUML to produce readable and clear UML diagrams.
-   
-3. **TermX Platform Integration:**  
-   - Add UML support to the TermX modeling environment, enabling users to view, edit, and maintain FHIR resources as UML diagrams.
-
-### Significance
-
-By enabling direct transformations between standard FHIR definitions and UML diagrams, this project:
-- Simplifies the work of developers who rely on established modeling methodologies.
-- Enhances interoperability and accelerates the development of healthcare IT systems.
-- Expands TermX platform functionality, promoting open-source healthcare solution advancement.
-
-## Demo
-
-You can try FHIR to UML convsion in the our sandbox [fhir-uml-converter.online](https://fhir-uml-converter.online).
-
-## Requirements
-
-- **Java 21 or above** (tested with OpenJDK)
-- **Gradle** (latest version recommended)
-- **HAPI FHIR libraries** (configured in `build.gradle`)
-- **PlantUML**  
-- **Graphviz** (required by PlantUML to generate diagrams)
-
-### Checking and Installing Graphviz
-
-**Check if Graphviz is installed:**
-```bash
-dot -V
-```
-If Graphviz is installed, this command should print a version number (e.g., `dot - graphviz version X.YZ`). If you get a "command not found" error, you need to install it.
-
-**Install Graphviz:**
-
-- On **Ubuntu/Debian**:
-  ```bash
-  sudo apt-get update
-  sudo apt-get install graphviz
-  ```
-
-- On **Fedora/CentOS/RHEL**:
-  ```bash
-  sudo dnf install graphviz
-  ```
-  *or*
-  ```bash
-  sudo yum install graphviz
-  ```
-
-- On **macOS** (with Homebrew):
-  ```bash
-  brew install graphviz
-  ```
-
-- On **Windows**:  
-  Download and install Graphviz from the official site: [https://graphviz.org/download/](https://graphviz.org/download/)
-
-Once Graphviz is installed, `dot -V` should work, and PlantUML can generate UML diagrams.
-
-## Building Converter
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository_url>
-   cd <project_directory>
-   ```
-
-2. **Go to the converter folder:**
-   ```bash
-   cd ./converter
-   ```
-
-3. **Build with Gradle Converter:**
-   ```bash
-   ./gradlew build
-   ```
-   This command will:
-   - Download and install all required dependencies.
-   - Compile the source code.
-   - Run any included tests.
-   - Produce a JAR file in `build/libs/`.
-
-## Running the Converter from the Command Line
-
-After a successful build, you can run the application as follows:
-
-```bash
-java -jar build/libs/fhir-uml-generation.jar --input path/to/structuredefinition.json --output path/to/output.png
-```
-
-**Command-line Parameters**
-
-The `fhir-uml-generation.jar` supports a range of options to customize the transformation between FHIR and UML formats.
-
-### Basic Usage
-
-```bash
-java -jar build/libs/fhir-uml-generation.jar \
-    --input path/to/input.json \
-    --output path/to/output.png \
-    [--txt [output.txt]] \
-    [--mode uml|fhir] \
-    [--view snapshot|differential] \
-    [--hide_removed_objects true|false] \
-    [--show_constraints true|false] \
-    [--show_bindings true|false] \
-    [--reduce_slice_classes true|false] \
-    [--hide_legend true|false] \
-    [--help]
-```
-
-### Parameters
-
-- `--input`  
-  Path to the input file (FHIR StructureDefinition JSON or UML .txt depending on mode).
-  
-- `--output`  
-  Path to the output file (PNG for UML mode, JSON for FHIR mode).
-  
-- `--txt` *(optional)*  
-  Also generate the PlantUML text file. You can specify a custom filename or let it default.
-
-- `--mode`  
-  Conversion direction:  
-  - `uml` (default): FHIR → UML  
-  - `fhir`: UML → FHIR
-
-- `--view`  
-  What elements to include from the StructureDefinition:  
-  - `snapshot` (default)  
-  - `differential`
-
-- `--hide_removed_objects`  
-  Whether to exclude removed/unsupported FHIR elements. Default: `true`.
-
-- `--show_constraints`  
-  Whether to include constraints in the UML diagram. Default: `true`.
-
-- `--show_bindings`  
-  Whether to show value set bindings. Default: `true`.
-
-- `--reduce_slice_classes`  
-  Simplifies sliced elements into fewer UML classes. Default: `false`.
-
-- `--hide_legend`  
-  Whether to hide the legend and notes in the UML output. Default: `false`.
-
-- `--help`  
-  Prints full usage instructions and exits.
-
----
-
-**Example (FHIR to UML):**
-```bash
-java -jar build/libs/fhir-uml-generation.jar \
-  --input resources/example-structuredefinition.json \
-  --output diagrams/generated-class-diagram.png
-```
-
-## Building and Running the Server (Optional)
-
-The server provides a REST API that allows you to convert FHIR StructureDefinitions into UML diagrams via HTTP requests. To run the server, follow these steps:
-
-### 1. Build the Converter First
-
-Before building the server, make sure you’ve already built the **converter**:
-
-```bash
-cd converter
-./gradlew build
-```
-
-Once built, copy the resulting JAR file to the server directory:
-
-```bash
-cp build/libs/fhir-uml-generation.jar ../server/
-```
-
-### 2. Download the PlantUML JAR
-
-The server uses **PlantUML** to generate UML diagrams. You need to download the PlantUML JAR file:
-
-```bash
-cd ../server
-curl -L https://github.com/plantuml/plantuml/releases/download/v1.2025.2/plantuml-1.2025.2.jar -o plantuml.jar
-```
-
-This will download and rename the file to `plantuml.jar` in the server folder.
-
-### 3. Build the Server
-
-Now build the server project:
-
-```bash
-./gradlew build
-```
-
-This will generate `fhir-uml-converter.jar` in `server/build/libs/`.
-
-### 4. Run the Server
-
-You can now run the server:
-
-```bash
-java -jar build/libs/fhir-uml-converter.jar
-```
-
-The server will start and listen on port `8080` by default.
-
----
-
-## Using the API
-
-Currently, the server provides a single endpoint:
-
-### `POST /api/fhir2uml`
-
-Converts a FHIR StructureDefinition to a UML diagram.
-
-###  Headers
-
-| Header                          | Description |
-|----------------------------------|-------------|
-| `Accept`                        | Specifies the response type and the UML view. Use:<br>• `application/json; view=snapshot` *(default)*<br>• `application/json; view=differential` |
-| `Content-Type`                  | The type of input payload. Options:<br>• `application/json` — FHIR StructureDefinition (default)<br>• `image/png` — UML image in PlantUML<br>• `image/svg+xml` — SVG format input |
-| `Content-Disposition`          | Controls how the response file is returned:<br>• `inline` *(default)* — displays in browser or client<br>• `attachment; filename="my-diagram.png"` — triggers file download |
-| `X-Hide-Removed-Objects`       | Whether to exclude removed/unsupported elements. Default: `true`. |
-| `X-Show-Constraints`           | Whether to include FHIR constraints in the UML diagram. Default: `true`. |
-| `X-Show-Bindings`              | Whether to show value set bindings. Default: `true`. |
-| `X-Reduce-Slice-Classes`       | Simplifies slice representation into fewer UML classes. Default: `false`. |
-| `X-Hide-Legend`                | Whether to hide the UML diagram legend. Default: `false`. |
-
-**Example request:**
+The project is two JVM modules plus an external renderer:
 
 ```
-POST http://localhost:8080/api/fhir2uml
-Accept: application/json; view=snapshot
-Content-Type: application/json
-Content-Disposition: attachment; filename="patient-def.png"
-X-Hide-Removed-Objects: false
-X-Show-Constraints: false
-X-Show-Bindings: false
-X-Reduce-Slice-Classes: false
-X-Hide-Legend: false
+            ┌──────────────┐   PlantUML text   ┌──────────────┐   PNG/SVG   ┌──────────────────┐
+ FHIR JSON ─▶│   server     │──────────────────▶│  converter   │            │  PlantUML server │
+   (HTTP)    │ (Spring Boot)│                   │ (HAPI FHIR)  │            │   (PLANT_UML_URL)│
+            │              │◀──────────────────│   subprocess │            │                  │
+            └──────┬───────┘   PlantUML text   └──────────────┘            └────────▲─────────┘
+                   │                                                                 │
+                   └──────────────── deflate+base64 encode, GET /png|/svg ───────────┘
 ```
 
-**Body:**  
-Send a valid FHIR StructureDefinition JSON as the request body.
+- **`converter/`** — a CLI (HAPI FHIR) that parses a `StructureDefinition` and emits **PlantUML text**.
+- **`server/`** — a Spring Boot REST API that runs the converter and, for image output, offloads
+  rendering to a **PlantUML HTTP server** (it encodes the text and calls `PLANT_UML_URL`).
 
-**Response:**  
-Returns a UML class diagram (image/png) based on the input and headers.
+Because rendering is offloaded, the image contains **no Graphviz and no `plantuml.jar`** — the
+TermX ecosystem already runs a PlantUML server, and any [PlantUML server](https://plantuml.com/server)
+works.
 
-## Building and Running with Docker (Optional)
+## Quick start (Docker)
 
-This project includes a pre-configured Docker setup that automates the process of running the server with the converter and PlantUML.
+The published image is `ghcr.io/termx-health/fhir-uml-server`.
 
-###  1. Build the Docker Image
+### Option A — use an existing PlantUML server
 
-From the root of the project (where the `Dockerfile` is located), run:
-
-```bash
-docker build -t fhir-uml-server .
-```
-
-This command builds the image, including:
-
-- Running Gradle builds for both the converter and server
-- Downloading the required PlantUML JAR
-- Packaging everything into a single runtime image
-
-###  2. Run the Container with Docker Compose
-
-If you have a `docker-compose.yml` in the root, you can start the container using:
+Configuration lives in [`fhir2uml.env`](fhir2uml.env); by default it points at the public TermX
+demo PlantUML server.
 
 ```bash
 docker compose up -d
 ```
 
-This will:
+### Option B — fully self-contained (bundled PlantUML server)
 
-- Start the container in detached mode
-- Expose the server on `localhost:8080` (by default)
-- Mount shared volumes (if defined)
+Runs fhir2uml together with its own PlantUML server, no external dependency:
 
-###  Notes
+```bash
+docker compose -f docker-compose.example.yml up -d
+```
 
-- You don’t need to build the JARs manually — it’s all handled within the Docker image.
+### Try it
+
+```bash
+# Rendered PNG
+curl -X POST http://localhost:8080/api/fhir2uml \
+     -H 'Content-Type: image/png' \
+     --data-binary @structuredefinition.json -o diagram.png
+
+# PlantUML text
+curl -X POST http://localhost:8080/api/fhir2uml \
+     -H 'Content-Type: text/plain' \
+     --data-binary @structuredefinition.json
+```
+
+## Configuration
+
+The server is configured entirely through environment variables (see [`fhir2uml.env`](fhir2uml.env)):
+
+| Variable           | Default                          | Description |
+|--------------------|----------------------------------|-------------|
+| `PLANT_UML_URL`    | `https://demo.termx.org/plantuml`| Base URL of the PlantUML HTTP server used to render PNG/SVG. |
+| `SERVER_PORT`      | `8080`                           | Port the REST API listens on. Update the published port in compose to match. |
+| `JDK_JAVA_OPTIONS` | *(unset)*                        | Optional JVM flags applied to the server **and** the converter subprocess (e.g. `-XX:MaxRAMPercentage=40`). |
+
+## REST API
+
+### `POST /api/fhir2uml`
+
+Send a FHIR `StructureDefinition` JSON as the request body. The **output format is chosen by the
+`Content-Type` request header**:
+
+| `Content-Type`     | Response |
+|--------------------|----------|
+| `image/png`        | PNG diagram |
+| `image/svg+xml`    | SVG diagram |
+| anything else (e.g. `text/plain`) | PlantUML text |
+
+Other headers:
+
+| Header                    | Description |
+|---------------------------|-------------|
+| `Accept`                  | UML view via a `view` parameter: `application/json; view=snapshot` *(default)* or `view=differential`. |
+| `Content-Disposition`     | `inline` *(default)* or `attachment; filename="diagram.png"` to force download. |
+| `X-Hide-Removed-Objects`  | Exclude removed/unsupported elements. Default `true`. |
+| `X-Show-Constraints`      | Include FHIR constraints. Default `true`. |
+| `X-Show-Bindings`         | Show value-set bindings. Default `true`. |
+| `X-Reduce-Slice-Classes`  | Collapse sliced elements into fewer UML classes. Default `false`. |
+| `X-Hide-Legend`           | Hide the legend/notes. Default `false`. |
+
+**Example**
+
+```http
+POST http://localhost:8080/api/fhir2uml
+Accept: application/json; view=differential
+Content-Type: image/svg+xml
+Content-Disposition: attachment; filename="patient.svg"
+X-Show-Constraints: false
+```
+
+## Building from source
+
+**Requirements:** Java 25+ (Temurin/OpenJDK). The bundled Gradle wrapper handles Gradle 9.4.
+
+### Converter
+
+```bash
+cd converter
+./gradlew build          # -> build/libs/fhir-uml-generation.jar
+```
+
+Run it standalone (emits PlantUML text):
+
+```bash
+java -jar build/libs/fhir-uml-generation.jar \
+  --input  path/to/structuredefinition.json \
+  --txt    path/to/output.puml
+```
+
+| Parameter                 | Description |
+|---------------------------|-------------|
+| `--input`                 | Input file (FHIR `StructureDefinition` JSON, or UML `.txt` in `fhir` mode). |
+| `--txt`                   | Path to write the generated PlantUML text. |
+| `--output`                | *(optional)* Fallback output path for the text if `--txt` is omitted; the FHIR JSON in `fhir` mode. |
+| `--mode uml\|fhir`        | Direction: `uml` (default) FHIR→UML, or `fhir` UML→FHIR. |
+| `--view snapshot\|differential` | Which elements to include. Default `snapshot`. |
+| `--hide_removed_objects`  | Exclude removed/unsupported elements. Default `true`. |
+| `--show_constraints`      | Include constraints. Default `true`. |
+| `--show_bindings`         | Show value-set bindings. Default `true`. |
+| `--reduce_slice_classes`  | Collapse sliced elements. Default `false`. |
+| `--hide_legend`           | Hide the legend/notes. Default `false`. |
+| `--help`                  | Print usage and exit. |
+
+To turn the text into an image, send it to any PlantUML server (this is what the REST server does).
+
+### Server
+
+```bash
+cd server
+./gradlew build          # -> build/libs/fhir-uml-converter.jar
+
+# the server invokes the converter jar by name; place it alongside, or run via Docker
+cp ../converter/build/libs/fhir-uml-generation.jar .
+
+PLANT_UML_URL=https://demo.termx.org/plantuml \
+  java -jar build/libs/fhir-uml-converter.jar
+```
+
+The server listens on `:8080` and expects `fhir-uml-generation.jar` in its working directory
+(`converter.name.jar` in `application.properties`).
+
+### Docker image
+
+Two Dockerfiles are provided:
+
+- **`Dockerfile`** — runtime-only; copies JARs you built on the host. Build the JARs first, then:
+  ```bash
+  docker build -t fhir-uml-server .
+  ```
+- **`Dockerfile.dev`** — multi-stage; builds both modules with Gradle inside the image:
+  ```bash
+  docker build -f Dockerfile.dev -t fhir-uml-server .
+  ```
+
+CI ([`.github/workflows/build.yml`](.github/workflows/build.yml)) builds the JARs and publishes a
+multi-arch (amd64/arm64) image to GHCR on pushes to `main` and on `*.*.*` tags.
 
 ## License
 
-This project is licensed under the **MIT** license.
+MIT.

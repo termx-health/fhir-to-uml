@@ -1,13 +1,11 @@
 package org.fhir.uml.generation.uml;
 
-import net.sourceforge.plantuml.StringUtils;
 import org.fhir.uml.generation.uml.elements.*;
 import org.fhir.uml.generation.uml.types.RelationShipType;
 import org.fhir.uml.generation.uml.utils.Utils;
 import org.hl7.fhir.r4.model.StructureDefinition;
 import org.hl7.fhir.r4.model.StructureDefinition.*;
 import org.hl7.fhir.r4.model.ElementDefinition;
-import org.hl7.fhir.r4.model.codesystems.Relationship;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -259,7 +257,7 @@ public class StructureDefinitionWrapper {
         if (umlElement.isChoiceOfTypeHeader()) {
             Arrays.stream(umlElement.getType().split(", ")).forEach(type -> {
                 String choiseId = umlElement.getElementId() + "." + type;
-                Element choiseUML = new Element.Builder().choiceOfTypeElement(true).name(umlElement.getName().replace("[x]", "") + StringUtils.capitalize(type)).type(type).build();
+                Element choiseUML = new Element.Builder().choiceOfTypeElement(true).name(umlElement.getName().replace("[x]", "") + Utils.capitalize(type)).type(type).build();
                 tableMap.computeIfAbsent(umlElement.getElementId(), k -> new ArrayList<>()).add(choiseUML);
                 elementMapper.put(choiseId, choiseUML);
             });

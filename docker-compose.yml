@@ -1,13 +1,13 @@
-version: '3'
+# Default deployment: pulls the published image and renders via an external
+# PlantUML server (configured in fhir2uml.env, defaults to the TermX demo).
+# For a fully self-contained stack with a bundled PlantUML server, see
+# docker-compose.example.yml.
 services:
   server:
-    container_name: server
-    image: fhir-uml-server
+    container_name: fhir2uml
+    image: ghcr.io/termx-health/fhir-uml-server:latest
+    restart: unless-stopped
     ports:
-      - 8080:8080
-
-    volumes:
-      - shared-data:/data
-
-volumes:
-  shared-data:
+      - "8080:8080"
+    env_file:
+      - fhir2uml.env
