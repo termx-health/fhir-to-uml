@@ -23,7 +23,8 @@ public class App {
     public static void main(String[] args) throws Exception {
         config = Config.fromArgs(args);
 
-        if (config.isShowHelp() || config.getInputFilePath() == null || config.getOutputFilePath() == null || config.isSaveTxt() && config.getTxtOutputFilePath() == null) {
+        if (config.isShowHelp() || config.getInputFilePath() == null
+                || (config.getTxtOutputFilePath() == null && config.getOutputFilePath() == null)) {
             printUsage();
             return;
         }
@@ -102,17 +103,13 @@ public class App {
 
             uml.setLegend(legend);
 
-            Utils.generateUMLDiagram(uml, config.getOutputFilePath());
-            System.out.println("Processing complete. UML PNG file written to: " + config.getOutputFilePath());
-
-            if (config.isSaveTxt()) {
-                String txtOutputFilePath = config.getTxtOutputFilePath();
-                if (txtOutputFilePath == null) {
-                    txtOutputFilePath = config.getTxtOutputFilePath().replaceAll("\\.png$", ".txt");
-                }
-                Utils.saveUMLAsText(uml, txtOutputFilePath);
-                System.out.println("PlantUML text also written to: " + txtOutputFilePath);
-            }
+            // Rendering to PNG/SVG is offloaded to a PlantUML server by the caller;
+            // this tool only emits PlantUML text. Write it to --txt (preferred) or --output.
+            String textOutputPath = config.getTxtOutputFilePath() != null
+                    ? config.getTxtOutputFilePath()
+                    : config.getOutputFilePath();
+            Utils.saveUMLAsText(uml, textOutputPath);
+            System.out.println("PlantUML text written to: " + textOutputPath);
         } catch (Exception e) {
             System.err.println("Error in UML mode: " + e.getMessage());
             e.printStackTrace();
@@ -162,8 +159,8 @@ public class App {
         System.out.println("Usage:");
         System.out.println("  java -jar fhir-uml-generation.jar \\");
         System.out.println("       --input <input_file> \\");
-        System.out.println("       --output <output_file> \\");
-        System.out.println("       [--txt [<txt_output_file>]] \\");
+        System.out.println("       --txt <txt_output_file> \\");
+        System.out.println("       [--output <output_file>] \\");
         System.out.println("       [--mode <uml|fhir>] \\");
         System.out.println("       [--view <snapshot|differential>] \\");
         System.out.println("       [--hide_removed_objects <true|false>] \\");
@@ -174,10 +171,10 @@ public class App {
         System.out.println("       [--help]");
         System.out.println();
         System.out.println("Modes:");
-        System.out.println("  uml (default): Transform FHIR StructureDefinition -> UML diagram (PNG + optionally PlantUML .txt)");
+        System.out.println("  uml (default): Transform FHIR StructureDefinition -> PlantUML text (rendered to PNG/SVG by a PlantUML server)");
         System.out.println("    --input       Path to input FHIR StructureDefinition (JSON)");
-        System.out.println("    --output      Path to output UML diagram (PNG)");
-        System.out.println("    --txt         Optionally save PlantUML text format; you may provide a filename or it defaults to .txt next to PNG.");
+        System.out.println("    --txt         Path to write the generated PlantUML text");
+        System.out.println("    --output      Alternative output path for the PlantUML text if --txt is not given");
         System.out.println();
         System.out.println("  fhir: Transform UML -> FHIR StructureDefinition");
         System.out.println("    --input       Path to UML in PlantUML text format (.txt)");

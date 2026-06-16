@@ -1,13 +1,9 @@
 # ---- Stage: Runtime image only ----
-FROM eclipse-temurin:21-jdk-alpine
-
-# Install graphviz and curl
-RUN apk add --no-cache graphviz curl
+# PlantUML rendering is offloaded to a PlantUML HTTP server (set PLANT_UML_URL),
+# so no graphviz / plantuml.jar is needed in the image.
+FROM eclipse-temurin:25-jdk-alpine
 
 WORKDIR /app
-
-# Download PlantUML
-RUN curl -L https://github.com/plantuml/plantuml/releases/download/v1.2025.2/plantuml-1.2025.2.jar -o plantuml.jar
 
 # Copy prebuilt JARs from the host (we’ll build them outside Docker)
 COPY server/build/libs/fhir-uml-converter.jar /app/server.jar

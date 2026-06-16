@@ -1,0 +1,52 @@
+name: Tests
+
+# Gate pull requests (and pushes to main) on both modules' test suites.
+# docker-publish.yml builds and publishes but does not run on PRs, so this is
+# what keeps a red suite from merging.
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ converter, server ]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run ${{ matrix.module }} tests
+        run: ./gradlew --no-daemon test
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.module }}-test-report
+          path: ${{ matrix.module }}/build/reports/tests/test
+          if-no-files-found: ignore
+          retention-days: 7

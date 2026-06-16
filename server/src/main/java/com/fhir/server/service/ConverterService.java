@@ -1,6 +1,7 @@
 package com.fhir.server.service;
 
 import com.fhir.server.util.Config;
+import com.fhir.server.util.PlantUmlEncoder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -9,9 +10,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
 
 @Service
@@ -22,8 +28,18 @@ public class ConverterService {
     @Value("${converter.name.jar}")
     private String converterJarName;
 
-    @Value("${plantuml.name.jar}")
-    private String PLANTUML_JAR = "plantuml.jar";
+    /**
+     * Base URL of a PlantUML HTTP server (e.g. {@code https://demo.termx.org/plantuml}).
+     * Rendering text → PNG/SVG is offloaded here instead of shelling out to a local
+     * {@code plantuml.jar} + graphviz, matching how the rest of the TermX ecosystem
+     * renders PlantUML.
+     */
+    @Value("${plantuml.server.url}")
+    private String plantUmlServerUrl;
+
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
 
     private static final String INPUT_FILE_BASENAME = "input";
     private static final String OUTPUT_TEXT_BASENAME = "output";
@@ -36,60 +52,37 @@ public class ConverterService {
 
         Path inputFile = Files.createTempFile(INPUT_FILE_BASENAME, ".json");
         Path outputTxt = Files.createTempFile(OUTPUT_TEXT_BASENAME, ".txt");
-        Path outputImage = Files.createTempFile(OUTPUT_TEXT_BASENAME, ".png");
 
         Files.writeString(inputFile, body, StandardCharsets.UTF_8);
         log.info("Wrote FHIR input to temp file: {}", inputFile);
 
-        // 1) Run main converter
-        ProcessResult converterResult = runConverterJar(inputFile, outputTxt, outputImage, config);
-        log.info("Main converter finished with exitCode={}", converterResult.exitCode);
+        try {
+            // 1) Run main converter: FHIR StructureDefinition -> PlantUML text
+            ProcessResult converterResult = runConverterJar(inputFile, outputTxt, config);
+            log.info("Main converter finished with exitCode={}", converterResult.exitCode);
 
-        if (converterResult.exitCode != 0) {
-            log.error("Main converter jar failed. stderr:\n{}", converterResult.stderr);
-            return buildFailedMessage(converterResult.exitCode, converterResult.stderr);
-        }
-        log.debug("Main converter stdout:\n{}", converterResult.stdout);
-        System.out.println(converterResult.stdout);
-
-        byte[] finalBytes;
-        if (Objects.equals(config.getContentType(), MediaType.TEXT_PLAIN_VALUE)) {
-            // If text/plain, read from outputTxt
-            log.info("Reading text output from: {}", outputTxt);
-            finalBytes = Files.readString(outputTxt, StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8);
-        } else {
-            // 2) Run PlantUML
-            log.info("Calling PlantUML for image output...");
-            ProcessResult plantUmlResult = runPlantUml(outputTxt, config);
-            log.info("PlantUML finished with exitCode={}", plantUmlResult.exitCode);
-
-            if (plantUmlResult.exitCode != 0) {
-                log.error("PlantUML failed. stderr:\n{}", plantUmlResult.stderr);
-                return buildFailedMessage(plantUmlResult.exitCode, plantUmlResult.stderr);
+            if (converterResult.exitCode != 0) {
+                log.error("Main converter jar failed. stderr:\n{}", converterResult.stderr);
+                return buildFailedMessage(converterResult.exitCode, converterResult.stderr);
             }
-            log.debug("PlantUML stdout:\n{}", plantUmlResult.stdout);
+            log.debug("Main converter stdout:\n{}", converterResult.stdout);
 
-            boolean isPng = Objects.equals(config.getContentType(), MediaType.IMAGE_PNG_VALUE);
-            String extension = isPng ? ".png" : ".svg";
+            String umlText = Files.readString(outputTxt, StandardCharsets.UTF_8);
 
-            String inputName = outputTxt.getFileName().toString();   // e.g. "input1234.json"
-            String baseNoExt = inputName.replaceAll("\\.\\w+$", ""); // "input1234"
-            Path finalOutputPath = outputTxt.getParent().resolve(baseNoExt + extension);
+            if (Objects.equals(config.getContentType(), MediaType.TEXT_PLAIN_VALUE)) {
+                // Raw PlantUML text requested — return it as-is.
+                log.info("Returning PlantUML text output ({} chars)", umlText.length());
+                return umlText.getBytes(StandardCharsets.UTF_8);
+            }
 
-            log.info("Reading final {} image from: {}", isPng ? "PNG" : "SVG", finalOutputPath);
-            finalBytes = Files.readAllBytes(finalOutputPath);
-
-            // Optionally remove the generated image
-            Files.deleteIfExists(finalOutputPath);
-            log.debug("Deleted plantUML output file: {}", finalOutputPath);
+            // 2) Offload rendering to the PlantUML server.
+            return renderViaPlantUmlServer(umlText, config);
+        } finally {
+            // Cleanup
+            Files.deleteIfExists(inputFile);
+            Files.deleteIfExists(outputTxt);
+            log.debug("Cleaned up temp files: {}, {}", inputFile, outputTxt);
         }
-
-        // Cleanup
-        Files.deleteIfExists(inputFile);
-        Files.deleteIfExists(outputTxt);
-        log.debug("Cleaned up temp files: {}, {}", inputFile, outputTxt);
-
-        return finalBytes;
     }
 
     public String convertUmlToFhir(String uml) {
@@ -97,14 +90,13 @@ public class ConverterService {
         return null;
     }
 
-    private ProcessResult runConverterJar(Path inputFile, Path outputTxt, Path outputImg, Config config)
+    private ProcessResult runConverterJar(Path inputFile, Path outputTxt, Config config)
             throws IOException, InterruptedException {
 
         ProcessBuilder pb = new ProcessBuilder(
                 "java", "-jar", converterJarName,
                 "--mode", config.getMode(),
                 "--input", inputFile.toAbsolutePath().toString(),
-                "--output", outputImg.toAbsolutePath().toString(),
                 "--txt", outputTxt.toAbsolutePath().toString(),
                 "--view", config.getView(),
                 "--hide_removed_objects", String.valueOf(config.getHideRemovedObjects()),
@@ -115,23 +107,34 @@ public class ConverterService {
         );
 
         log.debug("Running main converter jar with command: {}", pb.command());
-        System.out.println(pb.command());
         return runProcess(pb);
     }
 
-    private ProcessResult runPlantUml(Path inputFile, Config config)
+    private byte[] renderViaPlantUmlServer(String umlText, Config config)
             throws IOException, InterruptedException {
         boolean isPng = Objects.equals(config.getContentType(), MediaType.IMAGE_PNG_VALUE);
+        String format = isPng ? "png" : "svg";
 
-        ProcessBuilder pb;
-        if (isPng) {
-                pb = new ProcessBuilder("java", "-jar", PLANTUML_JAR,
-                    inputFile.toAbsolutePath().toString());
-        } else {
-            pb = new ProcessBuilder("java", "-jar", PLANTUML_JAR, inputFile.toAbsolutePath().toString(), "-tsvg");
+        String base = plantUmlServerUrl.endsWith("/")
+                ? plantUmlServerUrl.substring(0, plantUmlServerUrl.length() - 1)
+                : plantUmlServerUrl;
+        URI uri = URI.create(base + "/" + format + "/" + PlantUmlEncoder.encode(umlText));
+
+        log.info("Requesting {} render from PlantUML server: {}", format, base);
+        HttpRequest request = HttpRequest.newBuilder(uri)
+                .timeout(Duration.ofSeconds(30))
+                .GET()
+                .build();
+
+        HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        if (response.statusCode() != 200) {
+            String detail = new String(response.body(), StandardCharsets.UTF_8);
+            log.error("PlantUML server returned HTTP {} for {}: {}", response.statusCode(), uri, detail);
+            return buildFailedMessage(response.statusCode(),
+                    "PlantUML server (" + base + ") returned HTTP " + response.statusCode() + "\n" + detail);
         }
-        log.debug("Running PlantUML with command: {}", pb.command());
-        return runProcess(pb);
+        log.info("PlantUML server returned {} bytes ({})", response.body().length, format);
+        return response.body();
     }
 
     private ProcessResult runProcess(ProcessBuilder pb) throws IOException, InterruptedException {

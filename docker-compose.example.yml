@@ -1,0 +1,30 @@
+# Self-contained example: runs fhir2uml together with its own PlantUML server,
+# so no external rendering service is required.
+#
+#   docker compose -f docker-compose.example.yml up -d
+#   curl -X POST http://localhost:8080/api/fhir2uml \
+#        -H 'Content-Type: image/png' --data-binary @structuredefinition.json -o diagram.png
+#
+# The PLANT_UML_URL below points at the bundled `plantuml` service and
+# overrides whatever is in fhir2uml.env.
+services:
+  server:
+    container_name: fhir2uml
+    image: ghcr.io/termx-health/fhir-uml-server:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - fhir2uml.env
+    environment:
+      - PLANT_UML_URL=http://plantuml:8080
+    depends_on:
+      - plantuml
+
+  plantuml:
+    container_name: plantuml
+    image: plantuml/plantuml-server:jetty
+    restart: unless-stopped
+    # Exposed for debugging only; the server reaches it over the compose network.
+    ports:
+      - "8081:8080"
