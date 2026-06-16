@@ -73,7 +73,11 @@ public class App {
                 structureDefinitionWrapper.generateSnapshotUMLClasses();
             }
 
-            uml.getMainClass().setName(Element.getURLLastPath(structureDefinition.getBaseDefinition()));
+            // A definition with no renderable elements (e.g. an empty differential) yields no
+            // classes and thus no main class — guard against NPE so we still emit a valid diagram.
+            if (uml.getMainClass() != null) {
+                uml.getMainClass().setName(Element.getURLLastPath(structureDefinition.getBaseDefinition()));
+            }
 
             structureDefinitionWrapper.generateUMLRelations();
 
