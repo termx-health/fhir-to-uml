@@ -9,6 +9,7 @@ import org.fhir.uml.generation.uml.elements.Legend;
 import org.fhir.uml.generation.uml.elements.UML;
 import org.fhir.uml.generation.uml.types.LegendPosition;
 import org.fhir.uml.generation.uml.utils.Config;
+import org.fhir.uml.generation.uml.utils.StructureDefinitionLoader;
 import org.fhir.uml.generation.uml.utils.Utils;
 import org.hl7.fhir.r4.model.StructureDefinition;
 
@@ -40,9 +41,6 @@ public class App {
 
     private static void runUmlMode() {
         try {
-            FhirContext ctx = FhirContext.forR4();
-            IParser parser = ctx.newJsonParser();
-
             StringBuilder jsonContent = new StringBuilder();
             try (BufferedReader br = new BufferedReader(new FileReader(config.getInputFilePath()))) {
                 String line;
@@ -51,10 +49,9 @@ public class App {
                 }
             }
 
-            StructureDefinition structureDefinition = parser.parseResource(
-                    StructureDefinition.class,
-                    jsonContent.toString()
-            );
+            // Accept R4 / R4B / R5 input; normalize to the R4 model the generator is written against.
+            StructureDefinition structureDefinition =
+                    StructureDefinitionLoader.loadAsR4(jsonContent.toString());
 
             UML uml = new UML();
             StructureDefinitionWrapper structureDefinitionWrapper = new StructureDefinitionWrapper(structureDefinition, uml);
