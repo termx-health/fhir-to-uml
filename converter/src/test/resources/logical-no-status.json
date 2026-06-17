@@ -1,0 +1,17 @@
+{
+  "resourceType": "StructureDefinition","id": "TobaccoUse","url": "TobaccoUse","name": "TobaccoUse","fhirVersion": "4.3.0",
+  "kind": "logical","abstract": false,"type": "TobaccoUse","baseDefinition": "http://hl7.org/fhir/StructureDefinition/Element","derivation": "specialization",
+  "snapshot": { "element": [
+    { "id": "TobaccoUse","path": "TobaccoUse","min": 0,"max": "*","base": {"path":"TobaccoUse","min":0,"max":"*"} },
+    { "id": "TobaccoUse.id","path": "TobaccoUse.id","min": 0,"max": "1","base":{"path":"Element.id","min":0,"max":"1"},
+      "type": [ {"code":"http://hl7.org/fhirpath/System.String","extension":[{"url":"http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type","valueUrl":"id"}]} ] },
+    { "id": "TobaccoUse.extension","path": "TobaccoUse.extension","slicing":{"discriminator":[{"type":"value","path":"url"}],"rules":"open"},
+      "min": 0,"max": "*","base":{"path":"Element.extension","min":0,"max":"*"},"type":[{"code":"Extension"}] },
+    { "id": "TobaccoUse.patientCode","path": "TobaccoUse.patientCode","min": 1,"max": "1","base":{"path":"TobaccoUse.patientCode","min":1,"max":"1"},"type":[{"code":"string"}] },
+    { "id": "TobaccoUse.time","path": "TobaccoUse.time","min": 1,"max": "1","base":{"path":"TobaccoUse.time","min":1,"max":"1"},"type":[{"code":"dateTime"}] },
+    { "id": "TobaccoUse.practitionerCode","path": "TobaccoUse.practitionerCode","min": 0,"max": "1","base":{"path":"TobaccoUse.practitionerCode","min":0,"max":"1"},"type":[{"code":"string"}] },
+    { "id": "TobaccoUse.value","path": "TobaccoUse.value","min": 1,"max": "1","base":{"path":"TobaccoUse.value","min":1,"max":"1"},"type":[{"code":"code"}],"binding":{"strength":"required","valueSet":"https://ig.kodality.dev/healthsense/ValueSet-hs-tobacco-user.json"} },
+    { "id": "TobaccoUse.comments","path": "TobaccoUse.comments","min": 0,"max": "1","base":{"path":"TobaccoUse.comments","min":0,"max":"1"},"type":[{"code":"string"}] }
+  ] },
+  "differential": { "element": [ {"id":"TobaccoUse","path":"TobaccoUse"} ] }
+}

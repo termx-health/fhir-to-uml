@@ -15,6 +15,7 @@ import org.hl7.fhir.r4.model.StructureDefinition;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 
@@ -85,16 +86,21 @@ public class App {
             legend.setXPosition(LegendPosition.XPosition.RIGHT);
             legend.setYPosition(LegendPosition.YPosition.TOP);
 
+            // Legend fields are optional on the StructureDefinition (e.g. FSH-authored logical
+            // models often omit status). Guard every accessor so a missing field can't NPE the
+            // whole render — coalesce strings and only read enum .getDisplay() when present.
+            String status = structureDefinition.hasStatus() ? structureDefinition.getStatus().getDisplay() : "";
+            String kind = structureDefinition.hasKind() ? structureDefinition.getKind().getDisplay() : "";
             legend.addGroup("StructureDefinition")
                     .setHeader("Type", "Value")
-                    .addRow("url", structureDefinition.getUrl())
-                    .addRow("version", structureDefinition.getVersion())
-                    .addRow("name", structureDefinition.getName())
-                    .addRow("status", structureDefinition.getStatus().getDisplay())
-                    .addRow("kind", structureDefinition.getKind().getDisplay())
-                    .addRow("type", structureDefinition.getType())
+                    .addRow("url", Objects.toString(structureDefinition.getUrl(), ""))
+                    .addRow("version", Objects.toString(structureDefinition.getVersion(), ""))
+                    .addRow("name", Objects.toString(structureDefinition.getName(), ""))
+                    .addRow("status", status)
+                    .addRow("kind", kind)
+                    .addRow("type", Objects.toString(structureDefinition.getType(), ""))
                     .addRow("abstract", String.valueOf(structureDefinition.getAbstract()))
-                    .addRow("baseDefinition", structureDefinition.getBaseDefinition());
+                    .addRow("baseDefinition", Objects.toString(structureDefinition.getBaseDefinition(), ""));
 
             if (config.isShowConstraints()) {
                 Legend.LegendGroup constraintGroup = legend.addGroup("Constraints");

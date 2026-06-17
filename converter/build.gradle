@@ -57,3 +57,10 @@ jar {
         exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     }
 }
+
+// App/Config use a one-shot static singleton (Config.fromArgs ignores subsequent calls), so
+// each App.main-based test must run in its own JVM — mirrors production, where every conversion
+// is a fresh `java -jar` subprocess.
+test {
+    forkEvery = 1
+}
